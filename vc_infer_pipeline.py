@@ -5,6 +5,8 @@ import scipy.signal as signal
 import pyworld, os, traceback, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
+from torch import nn
+from torch.autograd import Variable
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -48,6 +50,23 @@ def change_rms(data1, sr1, data2, sr2, rate):  # 1是输入音频，2是输出�
         * torch.pow(rms2, torch.tensor(rate - 1))
     ).numpy()
     return data2
+
+
+onnx_export = True
+
+class HubertModel(nn.Module):
+    def __init__(self, model, version):
+        super().__init__()
+        self.model = model
+        self.version = version
+        self.model.eval()
+
+    def forward(self, source, padding_mask):
+        logits = self.model.extract_features(
+            source=source, padding_mask=padding_mask, output_layer=9
+        )
+        feats = self.model.final_proj(logits[0]) if self.version == "v1" else logits[0]
+        return feats
 
 
 class VC(object):
@@ -194,6 +213,26 @@ class VC(object):
         }
         t0 = ttime()
         with torch.no_grad():
+            if onnx_export:
+                is_half = False
+                if next(model.parameters()).dtype == torch.float16:
+                    is_half = True
+                print("------>")
+                export_model = HubertModel(model, version).to(torch.float32)
+                export_model.eval()
+                x = (Variable(inputs["source"].type(torch.float32)), Variable(inputs["padding_mask"]))
+                torch.onnx.export(
+                    export_model, x, 'hubert_base.onnx',
+                    input_names=["source", "padding_mask"],
+                    output_names=["feats"],
+                    dynamic_axes={'source' : [1], 'padding_mask' : [1], 'feats' : [1]},
+                    verbose=False, opset_version=14
+                )
+                if is_half:
+                    model = model.half()
+                model.to(self.device)
+                print("<------")
+            
             logits = model.extract_features(**inputs)
             feats = model.final_proj(logits[0]) if version == "v1" else logits[0]
         if protect < 0.5 and pitch != None and pitchf != None:
