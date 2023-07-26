@@ -1328,6 +1328,7 @@ def export_onnx(ModelPath, ExportedPath):
     cpt = torch.load(ModelPath, map_location="cpu")
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
     vec_channels = 256 if cpt.get("version", "v1") == "v1" else 768
+    if_f0 = cpt.get("f0", 1)
 
     test_phone = torch.rand(1, 200, vec_channels)  # hidden unit
     test_phone_lengths = torch.tensor([200]).long()  # hidden unit 长度（貌似没啥用）
@@ -1339,7 +1340,7 @@ def export_onnx(ModelPath, ExportedPath):
     device = "cpu"  # 导出时设备（不影响使用模型）
 
     net_g = SynthesizerTrnMsNSFsidM(
-        *cpt["config"], is_half=False, version=cpt.get("version", "v1")
+        *cpt["config"], is_half=False, if_f0=if_f0, version=cpt.get("version", "v1")
     )  # fp32导出（C++要支持fp16必须手动将内存重新排列所以暂时不用fp16）
     net_g.load_state_dict(cpt["weight"], strict=False)
     input_names = ["phone", "phone_lengths", "pitch", "pitchf", "ds", "rnd"]
@@ -1347,6 +1348,8 @@ def export_onnx(ModelPath, ExportedPath):
         "audio",
     ]
     # net_g.construct_spkmixmap(n_speaker) 多角色混合轨道导出
+    if if_f0 == 0:
+        net_g.forward = net_g.forward2
     torch.onnx.export(
         net_g,
         (

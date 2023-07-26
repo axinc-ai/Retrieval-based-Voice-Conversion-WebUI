@@ -550,6 +550,7 @@ class SynthesizerTrnMsNSFsidM(nn.Module):
         spk_embed_dim,
         gin_channels,
         sr,
+        if_f0,
         version,
         **kwargs
     ):
@@ -594,18 +595,30 @@ class SynthesizerTrnMsNSFsidM(nn.Module):
                 kernel_size,
                 p_dropout,
             )
-        self.dec = GeneratorNSF(
-            inter_channels,
-            resblock,
-            resblock_kernel_sizes,
-            resblock_dilation_sizes,
-            upsample_rates,
-            upsample_initial_channel,
-            upsample_kernel_sizes,
-            gin_channels=gin_channels,
-            sr=sr,
-            is_half=kwargs["is_half"],
-        )
+        if if_f0 == 1:
+            self.dec = GeneratorNSF(
+                inter_channels,
+                resblock,
+                resblock_kernel_sizes,
+                resblock_dilation_sizes,
+                upsample_rates,
+                upsample_initial_channel,
+                upsample_kernel_sizes,
+                gin_channels=gin_channels,
+                sr=sr,
+                is_half=kwargs["is_half"],
+            )
+        else:
+            self.dec = Generator(
+                inter_channels,
+                resblock,
+                resblock_kernel_sizes,
+                resblock_dilation_sizes,
+                upsample_rates,
+                upsample_initial_channel,
+                upsample_kernel_sizes,
+                gin_channels=gin_channels,
+            )
         self.enc_q = PosteriorEncoder(
             spec_channels,
             inter_channels,
@@ -647,6 +660,22 @@ class SynthesizerTrnMsNSFsidM(nn.Module):
         z_p = (m_p + torch.exp(logs_p) * rnd) * x_mask
         z = self.flow(z_p, x_mask, g=g, reverse=True)
         o = self.dec((z * x_mask)[:, :, :max_len], nsff0, g=g)
+        return o
+
+    def forward2(self, phone, phone_lengths, pitch, nsff0, g, rnd, max_len=None):
+        if self.speaker_map is not None:  # [N, S]  *  [S, B, 1, H]
+            g = g.reshape((g.shape[0], g.shape[1], 1, 1, 1))  # [N, S, B, 1, 1]
+            g = g * self.speaker_map  # [N, S, B, 1, H]
+            g = torch.sum(g, dim=1)  # [N, 1, B, 1, H]
+            g = g.transpose(0, -1).transpose(0, -2).squeeze(0)  # [B, H, N]
+        else:
+            g = g.unsqueeze(0)
+            g = self.emb_g(g).transpose(1, 2)
+
+        m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
+        z_p = (m_p + torch.exp(logs_p) * rnd) * x_mask
+        z = self.flow(z_p, x_mask, g=g, reverse=True)
+        o = self.dec((z * x_mask)[:, :, :max_len], g=g)
         return o
 
 
