@@ -8,6 +8,8 @@ from functools import lru_cache
 from torch import nn
 from torch.autograd import Variable
 
+onnx_export = False
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -51,8 +53,6 @@ def change_rms(data1, sr1, data2, sr2, rate):  # 1是输入音频，2是输出�
     ).numpy()
     return data2
 
-
-onnx_export = True
 
 class HubertModel(nn.Module):
     def __init__(self, model, version):
