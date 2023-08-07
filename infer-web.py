@@ -1327,6 +1327,7 @@ def export_onnx(ModelPath, ExportedPath):
     global cpt
     cpt = torch.load(ModelPath, map_location="cpu")
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
+    tgt_sr = cpt["config"][-1]
     vec_channels = 256 if cpt.get("version", "v1") == "v1" else 768
     if_f0 = cpt.get("f0", 1)
 
@@ -1373,7 +1374,9 @@ def export_onnx(ModelPath, ExportedPath):
         input_names=input_names,
         output_names=output_names,
     )
-    return "Finished"
+    print("tgt_sr:", tgt_sr)
+    print("if_f0:", if_f0)
+    return "Finished, tgt_sr: %d, if_f0: %d" % (tgt_sr, if_f0)
 
 
 with gr.Blocks(title="RVC WebUI") as app:
@@ -1409,7 +1412,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                         )
                         input_audio0 = gr.Textbox(
                             label=i18n("输入待处理音频文件路径(默认是正确格式示例)"),
-                            value="E:\\codes\\py39\\test-20230416b\\todo-songs\\冬之花clip1.wav",
+                            value="0-input.wav",
                         )
                         f0method0 = gr.Radio(
                             label=i18n(
