@@ -1739,7 +1739,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                     but1 = gr.Button(i18n("处理数据"), variant="primary")
                     info1 = gr.Textbox(label=i18n("输出信息"), value="")
                     but1.click(
-                        preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1]
+                        preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1], api_name = "preprocess_dataset"
                     )
             with gr.Group():
                 gr.Markdown(value=i18n("step2b: 使用CPU提取音高(如果模型带音高), 使用GPU提取特征(选择卡号)"))
