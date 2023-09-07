@@ -1787,6 +1787,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                             gpus_rmvpe,
                         ],
                         [info2],
+                        api_name = "extract_f0_feature"
                     )
             with gr.Group():
                 gr.Markdown(value=i18n("step3: 填写训练设置, 开始训练模型和索引"))
@@ -1889,6 +1890,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                             version19,
                         ],
                         info3,
+                        api_name = "click_train"
                     )
                     but4.click(train_index, [exp_dir1, version19], info3)
                     but5.click(
@@ -2060,7 +2062,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                 infoOnnx = gr.Label(label="info")
             with gr.Row():
                 butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary")
-            butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
+            butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx, api_name="export_onnx")
 
         tab_faq = i18n("常见问题解答")
         with gr.TabItem(tab_faq):
