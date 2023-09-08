@@ -173,6 +173,8 @@ def vc_single(
     protect,
 ):  # spk_item, input_audio0, vc_transform0,f0_file,f0method0
     global tgt_sr, net_g, vc, hubert_model, version, cpt
+    if f0_file == "":
+        f0_file = None
     if input_audio_path is None:
         return "You need to upload an audio", None
     f0_up_key = int(f0_up_key)
@@ -1482,7 +1484,12 @@ with gr.Blocks(title="RVC WebUI") as app:
                             step=0.01,
                             interactive=True,
                         )
-                    f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"))
+                    f0_file = gr.Textbox(
+                        label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"),
+                        value=None,
+                        interactive=True,
+                    )
+                    #f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"))
                     but0 = gr.Button(i18n("转换"), variant="primary")
                     with gr.Row():
                         vc_output1 = gr.Textbox(label=i18n("输出信息"))
@@ -1629,6 +1636,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                 fn=get_vc,
                 inputs=[sid0, protect0, protect1],
                 outputs=[spk_item, protect0, protect1],
+                api_name="get_vc"
             )
         with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")):
             with gr.Group():
