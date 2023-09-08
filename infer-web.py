@@ -1505,6 +1505,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                             protect0,
                         ],
                         [vc_output1, vc_output2],
+                        api_name = "vc_single"
                     )
             with gr.Group():
                 gr.Markdown(
