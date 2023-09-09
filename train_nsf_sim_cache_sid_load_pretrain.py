@@ -8,7 +8,7 @@ from lib.train import utils
 import datetime
 
 hps = utils.get_hparams()
-os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
+#os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
 n_gpus = len(hps.gpus.split("-"))
 from random import shuffle, randint
 
@@ -73,6 +73,11 @@ def main():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
     children = []
+    
+    if n_gpus == 0:
+        print("GPU not found error")
+        return
+
     for i in range(n_gpus):
         subproc = mp.Process(
             target=run,
